@@ -1,5 +1,5 @@
--- CREATE DATABASE `quizlet` CHARACTER SET utf8 COLLATE utf8_general_ci;
--- GRANT ALL ON `quizlet`.* TO `admin`@localhost IDENTIFIED BY 'sumome';
+CREATE DATABASE `quizlet` CHARACTER SET utf8 COLLATE utf8_general_ci;
+GRANT ALL ON `quizlet`.* TO `admin`@localhost IDENTIFIED BY 'sumome';
 
 USE `quizlet`;
 
