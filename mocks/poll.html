@@ -1,0 +1,66 @@
+<!doctype html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width">
+    <meta name="viewport" content="initial-scale=1">
+    <link rel="stylesheet" href="src/css/normalize.css" type="text/css"/>
+    <link rel="stylesheet" href="src/css/modal.css" type="text/css"/>
+    <link rel="stylesheet" href="src/css/poll.css" type="text/css"/>
+    <link rel="stylesheet" href="src/css/app.css" type="text/css"/>
+</head>
+<body>
+
+    <div class="modal">
+        <div class="modal-body">
+            <h2 class="poll-question">What is your favorite number?</h2>
+            <ul class="poll-answers radio">
+                <li>
+                    <input name="pq1" id="pa1" type="radio" class="toggle no-select" />
+                    <label for="pa1">The number 5</label>
+                </li>
+                <li>
+                    <input name="pq1" id="pa2" type="radio" class="toggle no-select" />
+                    <label for="pa2">The number 4</label>
+                </li>
+                <li>
+                    <input name="pq1" id="pa3" type="radio" class="toggle no-select" />
+                    <label for="pa3">The number 3</label>
+                </li>
+                <li>
+                    <input name="pq1" id="pa4" type="radio" class="toggle no-select" />
+                    <label for="pa4">The number 2</label>
+                </li>
+                <li>
+                    <input name="pq1" id="pa5" type="radio" class="toggle no-select" />
+                    <label for="pa5">The number 1</label>
+                </li>
+                <li>
+                    <input name="pq1" id="pa6" type="radio" class="toggle no-select" />
+                    <label for="pa6">None of the above</label>
+                </li>
+            </ul>
+            <div class="poll-controls">
+                <a href="" class="btn primary-btn">Submit Selection</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var $answers = $('.poll-entry-list'),
+                $li = $('<li class="poll-answer-control">'  
+                    + '<input type="text" class="answer-input" placeholder="Additional Answer" \/>'
+                    + '<span class="remove">&times;<\/span>'
+                    + '<\/li>');
+            
+            $('.add-more-button').on('click', function() {
+                $answers.append($li.clone());
+            });
+            $answers.on('click', '.remove', function(ev, el) {
+                $(this).parent('li').remove();
+            });
+        })
+    </script>
+</body>
+</html>

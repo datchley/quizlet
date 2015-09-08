@@ -1,0 +1,30 @@
+<div class="tabs">
+    <!-- TAB #1 --> 
+    <div class="tab">
+        <input class="tab-radio" type="radio" id="tab-1" name="tab-group-1" checked>
+        <label class="tab-label" for="tab-1">Poll Results</label>
+        
+        <div class="tab-panel">
+        <div class="tab-content">
+            <h3>Why would this be cool?</h3>
+            <p>First look at the HTML structure: all elements related to one tab are within one block. Now think about that for a while. This must be done by Chris Coyier's <a href="http://css-tricks.com/functional-css-tabs-revisited/">Functional CSS Tabs Revisited</a> already, right?</p>
+            <p>Maybe. But then you may notice another thing: Chris' example uses absolute positioning for the content. This means the tabs must be of fixed height. Yet these tabs here certainly aren't!</p>
+        </div>
+        </div> 
+    </div>
+  
+    <!-- TAB #2 -->
+    <div class="tab">
+        <input class="tab-radio" type="radio" id="tab-3" name="tab-group-1">
+        <label class="tab-label" for="tab-3">&plus;</label>
+
+        <div class="tab-panel">
+        <div class="tab-content">
+            <h3>The support must be poor!</h3>
+            <p>The CSS only part of this solution works in Internet Explorer 9+. All the other browsers are supported from so far back that it is enough to tell this works on Firefox, Chrome, Safari and Opera.</p>
+            <p>The JavaScript is quite simple and it is for IE8 and below. It does no harm to other browsers, but you probably want to hide it behind IE conditional comments: <code>&lt;!--[if lte IE 8]&gt; &hellip; &lt;![endif]--&gt;</code></p>
+        </div>
+        </div>
+    </div>  
+</div>
+

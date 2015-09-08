@@ -1,0 +1,12 @@
+<h2 class="poll-question">{{question}}</h2>
+<ul class="poll-answers radio">
+    {{#each answers }}
+    <li>
+        <input name="q{{../id}}" id="a{{id}}" type="radio" class="toggle no-select" />
+        <label for="a{{id}}">{{answer}}</label>
+    </li>
+    {{/each}}
+</ul>
+<div class="poll-controls">
+    <a href="" class="btn primary-btn">Submit Selection</a>
+</div>

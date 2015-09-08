@@ -1,0 +1,56 @@
+/*
+ * Modal Container 
+ */
+
+.modal {
+  min-height: 0;
+  display: inline-block;
+  box-shadow: 0 10px 0 0 #68A4FF inset;
+  background-color: #fff;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  width: 95%;
+  height: 95%;
+  transform: translate(-50%, -50%);
+}
+
+.modal-header .close {
+    position: absolute;
+    top: 10px;
+    right: 5px;
+    font-size: 1.2em;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.modal .modal-body {
+  position: relative;
+  padding: 0px 15px;
+}
+
+.modal .modal-header {
+    position: relative;
+    height: 30px;
+    width: 100%;
+}
+.modal .modal-footer {
+    position: absolute;
+    right: 0px;
+    bottom: 0px;
+    height: auto;
+    width: 100%;
+    text-align: right;
+    border-top: 1px solid rgba(197, 197, 197, 0.5);
+}
+
+@media (max-width: 550px) {
+  .modal .modal-container {
+    box-sizing: border-box;
+    transform: translate(0, 0);
+    max-width: 100%;
+    min-height: 100%;
+    margin: 0;
+    left: 0;
+  }
+}

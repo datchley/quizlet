@@ -1,0 +1,75 @@
+/*
+ * Poll Display
+ */
+.toggle {
+  text-align: center;
+  width: 40px;
+  height: auto;
+  position: absolute;
+  top: 10px;
+  bottom: 0;
+  margin: auto 0;
+  border: none;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+.poll-answer-control .toggle {
+  float: left;
+}
+
+.toggle:after {
+  content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#ccc" stroke-width="4"/></svg>');
+}
+
+.toggle:checked:after {
+  content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" viewBox="-10 -18 100 135"><circle cx="50" cy="50" r="50" fill="none" stroke="#bddad5" stroke-width="10"/><path fill="#5dc2af" d="M72 25L42 71 27 56l-4 4 20 20 34-52z"/></svg>');
+}
+
+ul.poll-answers {
+  margin-left: 0;
+  padding: 10px;
+}
+ul.poll-answers li {
+  position: relative;
+  list-style-type: none;
+  padding: 5px;
+}
+ul.poll-answers li:hover {
+  background-color: #fbfbfb;
+  border-radius: .25em;
+}
+
+/*
+ * Position radio/toggle and label for each answer 
+ */ 
+.poll-answers label {
+  display: inline-block;
+  cursor: pointer;
+  position: relative;
+  padding-left: 45px;
+  margin-right: 15px;
+  font-size: 1.3em;
+  z-index: 998;
+}
+
+.poll-answers .toggle {
+  z-index: 999;
+  top: 4px;
+}
+
+.poll-controls {
+  text-align: center;
+}
+
+.poll-controls button {
+  border: none;
+  color: #fff;
+  padding: .25em .5em;
+  margin: 0 .625em .625em 0;
+  font-size: 18px;
+  background-color: rgba(48, 69, 92, 0.8);
+  border-radius: .25em;
+}
+
