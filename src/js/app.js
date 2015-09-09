@@ -1,9 +1,9 @@
 var config = require('./config.js'),
     modal = require('./modal.js'),
-    polls = require('./poll.js'),
+    Quizlet = require('./quizlet.js'),
     $ = require('jquery');
 
-polls.init({
+Quizlet.init({
     url: config.url
 });
 

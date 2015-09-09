@@ -2,6 +2,8 @@ var config = require('./config'),
     util = require('util'),
     model = require('./sql/models'),
     express = require('express'),
+    CookieParser = require('cookie-parser'),
+    parser = require('body-parser'),
     jwtoken = require('jsonwebtoken'),
     Promise = require('bluebird');
 
@@ -11,10 +13,17 @@ var config = require('./config'),
 //
 var router = express.Router();
 
+// Parsing client-side cookies
+router.use(CookieParser());
+
+// Need to parse JSON from requests
+router.use(parser.urlencoded({ extended: true }));
+router.use(parser.json());
 
 // Simple authentication middleware
 function auth(req, res, next) {
-    var token = req.body.token || req.query.token || req.headers['x-access-token'];
+    console.log("> token: ", req.cookies.quizlet_admin_token);
+    var token = req.body.token || req.query.token || req.headers['x-access-token'] || req.cookies.quizlet_admin_token;
 
     if (token) {
         jwtoken.verify(token, config.admin_key, function(err, decoded) {
@@ -45,7 +54,7 @@ function getOrCreateClientTracker(ip) {
         else {
             return model.Poll_Tracking.create({
                 client: ip,
-                seen: '[]'  // empty JSON array
+                last_seen: 0  // empty JSON array
             });
         }
     });
@@ -56,11 +65,7 @@ function updateClientTracker(ip, pollId) {
 
     return getOrCreateClientTracker(ip)
     .then(function(tracker) {
-        var seen = JSON.parse(tracker.seen);
-        if (seen.indexOf(pollId) == -1) {
-            seen.push(pollId); 
-            tracker.seen = JSON.stringify(seen);
-        }
+        tracker.last_seen = parseInt(pollId, 10);
         return tracker.save();
     });
 }
@@ -92,11 +97,8 @@ router.route('/show')
         getOrCreateClientTracker(ip)
         .then(function(tracker) {
             console.log("> got tracker: ", tracker);    
-            var seen = JSON.parse(tracker.seen),
-                max = seen.length ? Math.max.apply(null, seen) : 0; 
-
             model.Polls.findOne({
-                where: { id: { $gt: max } },
+                where: { id: { $gt: tracker.last_seen } },
                 include: [ { model: model.Poll_Answers, as: 'answers' } ],
                 order: [ [ 'id', 'ASC' ] ]
             })
@@ -117,8 +119,8 @@ router.route('/show')
 
 // Authentication for 'admin'
 router.route('/authenticate')
-    .post(function(req, res) {
-        if (req.body.username == 'admin' && req.body.password == config.admin_password) {
+    .get(function(req, res) {
+        if (req.query.username == 'admin' && req.query.password == config.admin_password) {
             var token = jwtoken.sign('admin', config.admin_key, {
                     expiresInMinutes: 1440  // 24 hours
             });
@@ -128,7 +130,10 @@ router.route('/authenticate')
             });
         }
         else {
-            res.status(401).json({ message: 'Invalid username or password' });
+            res.status(401).json({ 
+                success: false,
+                message: 'Invalid username or password' 
+            });
         }
     });
 
@@ -226,19 +231,16 @@ router.route('/polls/:id')
 
 // Simple action API route to handle voting
 // Takes an array of one or more answer ids to up the vote count on
-router.route('/votes')
-    .post(auth, function(req, res) {
-       var answers = req.body;
-       if (!util.isArray(answers)) {
-        answers = [answers];
-       }
+router.route('/votes/:id')
+    .post(function(req, res) {
 
-       model.db.query('UPDATE poll_answers SET votes = votes + 1 WHERE id IN (' + answers.join(',') + ')')
+       console.log(">> answers? ", req.params.id);
+       model.db.query('UPDATE poll_answers SET votes = votes + 1 WHERE id = ' + req.params.id )
        .spread(function(results) {
             console.log("Updated counts: ", results);             
             res.json({
                 success: true,
-                message: "Updated vote count for " + results.changedRows + "/" + results.affectedRows + " answers: " + req.body.join(',')
+                message: "Updated vote count for " + results.changedRows + "/" + results.affectedRows + " answers: id=" + req.params.id
             });
        })
        .catch(function(error) {

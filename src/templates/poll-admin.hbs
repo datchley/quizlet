@@ -1,0 +1,69 @@
+<!-- tabs -->
+<div class="tabs">
+    <!-- TAB #1 -->
+    <div class="tab">
+        <input class="tab-radio" type="radio" id="tab-1" name="tab-group-1" checked>
+        <label class="tab-label" for="tab-1">Poll Results</label>
+        <div class="tab-panel">
+            <div class="tab-content">
+                <p>
+                    <!-- accordion -->
+                    <ul class="accordion">
+                        {{#each polls }}
+                        <li>
+                            <input type="checkbox" name="acc-group-{{id}}" checked>
+                            <i></i>
+                            <h2>{{question}}</h2>
+                            <div class="accordion-content">
+                                <div class="bar-results-columns">
+                                    <div class="bar-results-col-left">Answers</div>
+                                    <div class="bar-results-col-right">Votes / %</div>
+                                </div>
+                                <div class="bar-results">
+                                {{#each answers}}
+                                    <div class="bar-result">
+                                        <div class="bar-result-graph" style="width: {{percent}}%"></div>
+                                        <div class="bar-result-text">{{answer}}</div>
+                                        <div class="bar-result-label">{{votes}} / {{percent}}%</div>
+                                    </div>
+                                {{/each}}
+                                </div>
+                            </div>
+                        </li>
+                        {{/each}}
+                    </ul>
+                    <!-- /accordion -->
+                </p>
+            </div>
+        </div> 
+    </div>
+    <!-- TAB #2 -->
+    <div class="tab">
+        <input class="tab-radio" type="radio" id="tab-3" name="tab-group-1">
+        <label class="tab-label" for="tab-3">&plus;</label>
+        <div class="tab-panel">
+            <div class="tab-content">
+                <div class="poll-question-control">
+                    <p> Enter a new poll question and answers below.  </p>
+                    <input type="text" class="question-input" placeholder="Enter the poll question" autofocus />
+                </div>
+                <ol class="poll-entry-list">
+                    <li class="poll-answer-control">
+                        <input type="text" class="answer-input" placeholder="First Answer" />
+                    </li>
+                    <li class="poll-answer-control">
+                        <input type="text" class="answer-input" placeholder="Second Answer" />
+                    </li>
+                </ol>
+
+                <div style="text-align: right">
+                    <a href="javascript: false;" class="add-more-button">Add another answer</a>
+                </div>
+                <div class="modal-controls">
+                    <button class="btn primary-btn">Save Poll</button>
+                </div>
+            </div>
+        </div>
+    </div>  
+</div>
+<!-- /tabs -->

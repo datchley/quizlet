@@ -16818,10 +16818,10 @@ return jQuery;
 },{}],25:[function(require,module,exports){
 var config = require('./config.js'),
     modal = require('./modal.js'),
-    polls = require('./poll.js'),
+    Quizlet = require('./quizlet.js'),
     $ = require('jquery');
 
-polls.init({
+Quizlet.init({
     url: config.url
 });
 
@@ -16833,13 +16833,123 @@ $(document).ready(function() {
 });
 
 
-},{"./config.js":26,"./modal.js":27,"./poll.js":28,"jquery":23}],26:[function(require,module,exports){
+},{"./config.js":26,"./modal.js":28,"./quizlet.js":31,"jquery":23}],26:[function(require,module,exports){
 module.exports = {
     // API base url or path
     url: 'http://localhost:8181/api'
 };
 
 },{}],27:[function(require,module,exports){
+var template = require('../templates/login.hbs'),
+    cookie = require('../lib/js/cookie.js'),
+    modal = require('./modal.js'),
+    $ = require('jquery'),
+    Promise = require('bluebird'),
+    _ = require('underscore');
+    
+
+var LoginView = {
+    init: function(cfg) {
+        // configuration parameters
+        this.config = cfg;
+
+        this.checkToken();
+
+        this.initEvents();
+    },
+
+    checkToken: function() {
+        // Does this user already have an admin token?
+        this.admin_token = cookie.get('quizlet_admin_token') || false;
+        if (this.admin_token) {
+           console.log("Got quizlet_admin_token: ", this.admin_token); 
+        }
+        return this.admin_token;
+    },
+
+    initEvents: function() {
+        // tracking hot key sequences (keydown can't detect uppercase/lowercase reports all uppercase char codes)
+        var sequence = 'QUIZLET'.split('').reduce(function(acc, char) {
+                acc.push(char.charCodeAt(0));
+                return acc;
+            }, []).concat([38]),    // up-arrow at end
+            captured = [],
+            self = this;
+
+        // Listen for hotkey to trigger admin loggin
+        $(document).keydown(function(ev) {
+            captured.push(ev.keyCode);
+            if (new RegExp("^"+captured.toString()).test(sequence)) {
+                // Matches sequence so far, is it a full match?
+                if (captured.toString() == sequence.toString()) {
+                    console.log("> Admin Login Request!");
+                    if (!self.checkToken()) {
+                        self.showLogin();
+                    }
+                    else {
+                        $(document).trigger('quizlet:admin');
+                    }
+                }
+            }
+            else {
+                // clear the sequence, wait and try again
+                captured = [];
+            }
+        });
+    },
+
+    showLogin: function() {
+        var html = template({ authenticated: this.checkToken() }),
+            loginModal =  modal({ contents: html }),
+            self = this;
+
+        this.loginModal = loginModal;
+        this.$modal = loginModal.show();
+
+        this.$modal.find('button[name="btn-login"]').on('click', function(ev) {
+            self.authenticate();
+            return false;
+        });
+
+        this.$modal.find('input[name="password"]').keypress(function(ev) {
+            if (ev.which == 13) {
+                self.authenticate();
+                return false;
+            }
+        });
+    },
+
+    authenticate: function() {
+        var params = {
+                username: 'admin',
+                password: this.$modal.find('input[name="password"]').val()
+            },
+            self = this;
+
+        return $.getJSON(this.config.url + '/authenticate', params)
+        .then(function(results) {
+            // Set Admin token cookie on successful login
+            if (results.success) {
+                console.log("results: ", results);
+                cookie.set('quizlet_admin_token', results.token);
+                $(document).trigger('quizlet:admin');
+            }
+            else {
+                self.loginModal.alert("<b>Error</b>: " + results.message);
+            }
+        })
+        .fail(function(response) {
+            var json = response.responseJSON;
+            console.log("> error:", json.message);
+            self.loginModal.alert('error', "<b>Error</b>: " + json.message || response.responseText);
+        });
+    }
+
+};
+
+module.exports = LoginView;
+
+},{"../lib/js/cookie.js":32,"../templates/login.hbs":34,"./modal.js":28,"bluebird":1,"jquery":23,"underscore":24}],28:[function(require,module,exports){
 var template = require('../templates/modal.hbs'),
     $ = require('jquery');
 
@@ -16872,10 +16982,17 @@ var modal = function(cfg) {
     $modal.css('z-index', '1999');
 
     return { 
-        initialized: false,
+        classes: {
+            'info': 'modal-alert-info',
+            'error': 'modal-alert-danger',
+            'success': 'modal-alert-success'
+        },
         show: function() {
             // Append markup element for modal
-            $('body').append($modal);
+            var $el = $('body').append($modal),
+                $alert = $el.find('.modal-alert');
+
+            this.$alert = $alert;
 
             // Append mask if not already 
             if (!$('#modal-mask').length) {
@@ -16885,13 +17002,32 @@ var modal = function(cfg) {
             $mask.show();
             $modal.show();
     
-            if (!this.initialized) {
-                $('.close', $modal).on('click', this.hide);
+            $('.modal-close', $modal).on('click', this.hide);
+            return $el;
+        },
+
+        alert: function(type, message) {
+           var self = this;
+
+            if (arguments.length == 1) {
+                message = type;
+                type = 'info';
             }
+
+            this.$alert
+                .removeClass('modal-alert-info modal-alert-success modal-alert-danger')
+                .addClass(this.classes[type.toLowerCase()]);
+
+            $('.modal-alert-content', this.$alert).html(message);
+
+            this.$alert.show();
+            this.$alert.find('.close').click(function() {
+                self.$alert.hide();
+            });
         },
 
         hide: function() {
-            $modal.hide();
+            $modal.hide().remove();
             $mask.hide();
         }
     };
@@ -16899,8 +17035,8 @@ var modal = function(cfg) {
 
 module.exports = modal;
 
-},{"../templates/modal.hbs":31,"jquery":23}],28:[function(require,module,exports){
-var template = require('../templates/poll.hbs'),
+},{"../templates/modal.hbs":35,"jquery":23}],29:[function(require,module,exports){
+var template = require('../templates/poll-admin.hbs'),
     cookie = require('../lib/js/cookie.js'),
     modal = require('./modal.js'),
     $ = require('jquery'),
@@ -16910,89 +17046,186 @@ var template = require('../templates/poll.hbs'),
 // Ensure cookie values are written as json
 cookie.json = true;
 
-// Default configuration
-var defaults = {
-    url: '/'
-};
-
-var Poll = {
+var PollAdminView = {
     init: function(cfg) {
         // configuration parameters
-        this.config = $.extend({}, defaults, cfg);
+        this.config = cfg;
 
+        this.checkToken();
+
+        this.initEvents();
+    },
+
+    checkToken: function() {
         // Does this user already have an admin token?
         this.admin_token = cookie.get('quizlet_admin_token') || false;
         if (this.admin_token) {
            console.log("Got quizlet_admin_token: ", this.admin_token); 
         }
-
-        // Fetch our initial state from our endpoint
-        this.getState().then(function(success) {
-            if (success) {
-                this.initEvents(); 
-                this.showPoll();
-            }
-        }.bind(this));
-    },
-
-    getState: function() {
-        // Fetch our initial state from backend service
-        return $.getJSON(this.config.url + '/track')
-            .then(function(response) {
-                if (response.success) {
-                    this.state = response.data;
-                    console.log("> got initial state: ", this.state);
-                    return true;
-                }
-                else {
-                    console.log("> error fetching state: ", response.message);
-                    return false;
-                }
-            });
+        return this.admin_token;
     },
 
     initEvents: function() {
-        // tracking hot key sequences (keydown can't detect uppercase/lowercase reports all uppercase char codes)
-        var sequence = 'QUIZLET'.split('').reduce(function(acc, char) {
-                acc.push(char.charCodeAt(0));
-                return acc;
-            }, []).concat([38]),    // up-arrow at end
-            captured = [];
-
-        // Listen for hotkey to trigger admin loggin
-        $(document).keydown(function(ev) {
-            captured.push(ev.keyCode);
-            if (new RegExp("^"+captured.toString()).test(sequence)) {
-                // Matches sequence so far, is it a full match?
-                if (captured.toString() == sequence.toString()) {
-                    console.log("> Admin Login Request!");
-                    $(document).trigger('quizlet:adminRequest');
-                }
+        var self = this;
+        $(document).on('quizlet:admin', function() {
+            if (self.checkToken()) {
+                self.showAdmin();
             }
             else {
-                // clear the sequence, wait and try again
-                captured = [];
+                console.log("> error: not authenticated, no admin access");
             }
         });
     },
 
+    showAdmin: function() {
+        var self = this;
+
+        $.getJSON(self.config.url + '/polls')
+            .then(function(results) {
+                var polls = [];
+                if (results.success) {
+                    polls = results.data.map(function(poll) {
+                        var total = _.pluck(poll.answers, 'votes').reduce(function(sum, n) { return sum += n; });
+                        poll.answers = poll.answers.map(function(answer) {
+                            answer.percent = answer.votes ? ((answer.votes / total) * 100).toFixed(2) : 0;
+                            return answer;
+                        });
+                        return poll;
+                    });
+                }
+                return polls;
+            })
+            .then(function(polls) {
+                var html = template({ 
+                        'authenticated': self.checkToken(),
+                        'polls': polls
+                    }),
+                    adminModal =  modal({ contents: html });
+
+                self.$modal = adminModal.show();
+/*
+                this.$el.find('button[name="btn-login"]').on('click', function(ev) {
+                    self.authenticate();
+                    return false;
+                });
+
+                this.$el.find('input[name="password"]').keypress(function(ev) {
+                    if (ev.which == 13) {
+                        self.authenticate();
+                        return false;
+                    }
+                });
+*/
+            });
+    }
+};
+
+module.exports = PollAdminView;
+
+},{"../lib/js/cookie.js":32,"../templates/poll-admin.hbs":36,"./modal.js":28,"bluebird":1,"jquery":23,"underscore":24}],30:[function(require,module,exports){
+var template = require('../templates/poll.hbs'),
+    modal = require('./modal.js'),
+    $ = require('jquery'),
+    Promise = require('bluebird'),
+    _ = require('underscore');
+    
+
+var PollView = {
+    init: function(cfg) {
+        // configuration parameters
+        this.config = cfg;
+
+        this.initEvents();
+    },
+
+    initEvents: function() {
+        var self = this;
+        $(document).ready(function() {
+            // Fetch state for this client/ip and show a poll (if any unseen)
+            self.getState().then(function(results) {
+                self.showPoll();
+            });
+        });
+    },
+
+    getState: function() {
+        // Fetch our initial state from backend service
+        return $.getJSON(this.config.url + '/track');
+    },
+
     showPoll: function() {
+        var self = this;
         $.getJSON(this.config.url + '/show')
             .then(function(response) {
                 if (response.success) {
                     var html = template(response.data),
-                        poll_modal = modal({ contents: html });
+                        pollModal = modal({ contents: html });
 
-                    poll_modal.show();
+                    self.$modal = pollModal.show();
+
+                    // Submit vote
+                    self.$modal.find('#vote-btn').click(function(ev) {
+                        var vote = parseInt(self.$modal.find('input:checked').val(), 10);
+                        console.log("vote:", vote);
+                        $.ajax({
+                            method: 'POST',
+                            dataType: "json",
+                            url: self.config.url + '/votes/' + vote
+                        })
+                        .then(function(result) {
+                            if (result.success) {
+                                console.log('>', result.message);
+                            }
+                        })
+                        .fail(function(response) {
+                            console.log("> error: ", response.responseJSON.message || response.responseText); 
+                        })
+                        .always(function() {
+                            pollModal.hide();
+                        });
+                    });
                 }
             });
     }
 };
 
-module.exports = Poll;
+module.exports = PollView;
 
 
-},{"../lib/js/cookie.js":29,"../templates/poll.hbs":34,"./modal.js":27,"bluebird":1,"jquery":23,"underscore":24}],29:[function(require,module,exports){
+},{"../templates/poll.hbs":39,"./modal.js":28,"bluebird":1,"jquery":23,"underscore":24}],31:[function(require,module,exports){
+var Login = require('./login.js'),
+    PollAdmin = require('./poll-admin.js'),
+    Poll = require('./poll.js'),
+    $ = require('jquery'),
+    Promise = require('bluebird'),
+    _ = require('underscore');
+    
+
+// Default configuration
+var defaults = {
+    url: '/'
+};
+
+var Quizlet = {
+    init: function(cfg) {
+        var self = this;
+        // configuration parameters
+        this.config = $.extend({}, defaults, cfg);
+
+        // Views for Quizlet Interface
+        this.views = [Login, PollAdmin, Poll];
+
+        // Initialize our views
+        self.views.forEach(function(view) {
+            view.init(self.config);
+        });
+    },
+};
+
+module.exports = Quizlet;
+
+
+},{"./login.js":27,"./poll-admin.js":29,"./poll.js":30,"bluebird":1,"jquery":23,"underscore":24}],32:[function(require,module,exports){
 /*!
  * Javascript Cookie v1.5.1
  * https://github.com/js-cookie/js-cookie
@@ -17141,14 +17374,28 @@ module.exports = Poll;
     return api;
 }));
 
-},{"jquery":23}],30:[function(require,module,exports){
+},{"jquery":23}],33:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
     return "<ul class=\"accordion\">\n    <li>\n        <input type=\"checkbox\" checked>\n        <i></i>\n        <h2>Languages Used</h2>\n        <p>This page was written in HTML and CSS. The CSS was compiled from SASS. I used Normalize as my CSS reset and -prefix-free to save myself some headaches. I haven't quite gotten the hang of Slim for compiling into HTML, but someday I'll use it since its syntax compliments that of SASS. Regardless, this could all be done in plain HTML and CSS.</p>\n    </li>\n    <li>\n        <input type=\"checkbox\" checked>\n        <i></i>\n        <h2>How it Works</h2>\n        <p>Using the sibling and checked selectors, we can determine the styling of sibling elements based on the checked state of the checkbox input element. One use, as demonstrated here, is an entirely CSS and HTML accordion element. Media queries are used to make the element responsive to different screen sizes.</p>\n    </li>\n    <li>\n        <input type=\"checkbox\" checked>\n        <i></i>\n        <h2>Points of Interest</h2>\n        <p>By making the open state default for when :checked isn't detected, we can make this system accessable for browsers that don't recognize :checked. The fallback is simply an open accordion. The accordion can be manipulated with Javascript (if needed) by changing the \"checked\" property of the input element.</p>\n    </li>\n</ul>\n";
 },"useData":true});
 
-},{"hbsfy/runtime":22}],31:[function(require,module,exports){
+},{"hbsfy/runtime":22}],34:[function(require,module,exports){
+// hbsfy compiled Handlebars template
+var HandlebarsCompiler = require('hbsfy/runtime');
+module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data) {
+    return "    <p>Hey, <b>Admin</b>!  You're already authenticated.</p>\n";
+},"3":function(container,depth0,helpers,partials,data) {
+    return "    <p>Login as administrator</p>\n    <input type=\"password\" class=\"form-control\" name=\"password\" placeholder=\"Password\" autofocus />\n    <div class=\"modal-controls\">\n        <button type=\"button\" class=\"btn\">Cancel</button>\n        <button type=\"button\" name=\"btn-login\" class=\"btn primary-btn\">Login</button>\n    </div>\n";
+},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+    var stack1;
+
+  return "<h1>Quizlet:Admin</h1>\n"
+    + ((stack1 = helpers["if"].call(depth0,(depth0 != null ? depth0.authenticated : depth0),{"name":"if","hash":{},"fn":container.program(1, data, 0),"inverse":container.program(3, data, 0),"data":data})) != null ? stack1 : "");
+},"useData":true});
+
+},{"hbsfy/runtime":22}],35:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
@@ -17156,26 +17403,59 @@ module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":f
 
   return "<div id="
     + container.escapeExpression(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"id","hash":{},"data":data}) : helper)))
-    + " class=\"modal\" style=\"display: none\">\n    <div class=\"modal-header\">\n        <span class=\"close\">&times</span>\n    </div>\n    <div class=\"modal-body\">\n        "
+    + " class=\"modal\" style=\"display: none\">\n    <div class=\"modal-header\">\n        <span class=\"modal-close\">&times</span>\n    </div>\n    <div class=\"modal-body\">\n        <div class=\"modal-alert\" style=\"display:none\">\n            <span class=\"close\">&times;</span> \n            <p class=\"modal-alert-content\"></p>\n        </div>\n        "
     + ((stack1 = ((helper = (helper = helpers.contents || (depth0 != null ? depth0.contents : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"contents","hash":{},"data":data}) : helper))) != null ? stack1 : "")
     + "\n    </div>\n</div>\n";
 },"useData":true});
 
-},{"hbsfy/runtime":22}],32:[function(require,module,exports){
+},{"hbsfy/runtime":22}],36:[function(require,module,exports){
+// hbsfy compiled Handlebars template
+var HandlebarsCompiler = require('hbsfy/runtime');
+module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data) {
+    var stack1, helper, alias1=helpers.helperMissing, alias2="function", alias3=container.escapeExpression;
+
+  return "                        <li>\n                            <input type=\"checkbox\" name=\"acc-group-"
+    + alias3(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"id","hash":{},"data":data}) : helper)))
+    + "\" checked>\n                            <i></i>\n                            <h2>"
+    + alias3(((helper = (helper = helpers.question || (depth0 != null ? depth0.question : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"question","hash":{},"data":data}) : helper)))
+    + "</h2>\n                            <div class=\"accordion-content\">\n                                <div class=\"bar-results-columns\">\n                                    <div class=\"bar-results-col-left\">Answers</div>\n                                    <div class=\"bar-results-col-right\">Votes / %</div>\n                                </div>\n                                <div class=\"bar-results\">\n"
+    + ((stack1 = helpers.each.call(depth0,(depth0 != null ? depth0.answers : depth0),{"name":"each","hash":{},"fn":container.program(2, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "                                </div>\n                            </div>\n                        </li>\n";
+},"2":function(container,depth0,helpers,partials,data) {
+    var helper, alias1=helpers.helperMissing, alias2="function", alias3=container.escapeExpression;
+
+  return "                                    <div class=\"bar-result\">\n                                        <div class=\"bar-result-graph\" style=\"width: "
+    + alias3(((helper = (helper = helpers.percent || (depth0 != null ? depth0.percent : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"percent","hash":{},"data":data}) : helper)))
+    + "%\"></div>\n                                        <div class=\"bar-result-text\">"
+    + alias3(((helper = (helper = helpers.answer || (depth0 != null ? depth0.answer : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"answer","hash":{},"data":data}) : helper)))
+    + "</div>\n                                        <div class=\"bar-result-label\">"
+    + alias3(((helper = (helper = helpers.votes || (depth0 != null ? depth0.votes : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"votes","hash":{},"data":data}) : helper)))
+    + " / "
+    + alias3(((helper = (helper = helpers.percent || (depth0 != null ? depth0.percent : depth0)) != null ? helper : alias1),(typeof helper === alias2 ? helper.call(depth0,{"name":"percent","hash":{},"data":data}) : helper)))
+    + "%</div>\n                                    </div>\n";
+},"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+    var stack1;
+
+  return "<!-- tabs -->\n<div class=\"tabs\">\n    <!-- TAB #1 -->\n    <div class=\"tab\">\n        <input class=\"tab-radio\" type=\"radio\" id=\"tab-1\" name=\"tab-group-1\" checked>\n        <label class=\"tab-label\" for=\"tab-1\">Poll Results</label>\n        <div class=\"tab-panel\">\n            <div class=\"tab-content\">\n                <p>\n                    <!-- accordion -->\n                    <ul class=\"accordion\">\n"
+    + ((stack1 = helpers.each.call(depth0,(depth0 != null ? depth0.polls : depth0),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
+    + "                    </ul>\n                    <!-- /accordion -->\n                </p>\n            </div>\n        </div> \n    </div>\n    <!-- TAB #2 -->\n    <div class=\"tab\">\n        <input class=\"tab-radio\" type=\"radio\" id=\"tab-3\" name=\"tab-group-1\">\n        <label class=\"tab-label\" for=\"tab-3\">&plus;</label>\n        <div class=\"tab-panel\">\n            <div class=\"tab-content\">\n                <div class=\"poll-question-control\">\n                    <p> Enter a new poll question and answers below.  </p>\n                    <input type=\"text\" class=\"question-input\" placeholder=\"Enter the poll question\" autofocus />\n                </div>\n                <ol class=\"poll-entry-list\">\n                    <li class=\"poll-answer-control\">\n                        <input type=\"text\" class=\"answer-input\" placeholder=\"First Answer\" />\n                    </li>\n                    <li class=\"poll-answer-control\">\n                        <input type=\"text\" class=\"answer-input\" placeholder=\"Second Answer\" />\n                    </li>\n                </ol>\n\n                <div style=\"text-align: right\">\n                    <a href=\"javascript: false;\" class=\"add-more-button\">Add another answer</a>\n                </div>\n                <div class=\"modal-controls\">\n                    <button class=\"btn primary-btn\">Save Poll</button>\n                </div>\n            </div>\n        </div>\n    </div>  \n</div>\n<!-- /tabs -->\n";
+},"useData":true});
+
+},{"hbsfy/runtime":22}],37:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
     return "<div class=\"poll-question-control\">\n    <p> Enter a new poll question and answers below.  </p>\n    <input type=\"text\" class=\"question-input\" placeholder=\"Enter the poll question\" autofocus />\n</div>\n<ol class=\"poll-entry-list\">\n    <li class=\"poll-answer-control\">\n        <input type=\"text\" class=\"answer-input\" placeholder=\"First Answer\" />\n    </li>\n    <li class=\"poll-answer-control\">\n        <input type=\"text\" class=\"answer-input\" placeholder=\"Second Answer\" />\n    </li>\n</ol>\n\n<div style=\"text-align: right\">\n    <a href=\"javascript: false;\" class=\"add-more-button\">Add another answer</a>\n</div>\n<div class=\"modal-controls\">\n    <button class=\"btn primary-btn\">Save Poll</button>\n</div>\n";
 },"useData":true});
 
-},{"hbsfy/runtime":22}],33:[function(require,module,exports){
+},{"hbsfy/runtime":22}],38:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
     return "<div class=\"bar-results-columns\">\n    <div class=\"bar-results-col-left\">Answers</div>\n    <div class=\"bar-results-col-right\">Count / %</div>\n</div>\n<div class=\"bar-results\">\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 20%\"></div>\n        <div class=\"bar-result-text\">Answer #1 Text</div>\n        <div class=\"bar-result-label\">3 / 20%</div>\n    </div>\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 30%\"></div>\n        <div class=\"bar-result-text\">Answer #2 Text</div>\n        <div class=\"bar-result-label\">9 / 30%</div>\n    </div>\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 45%\"></div>\n        <div class=\"bar-result-text\">Answer #3 Text</div>\n        <div class=\"bar-result-label\">14 / 45%</div>\n    </div>\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 10%\"></div>\n        <div class=\"bar-result-text\">Answer #4 Text</div>\n        <div class=\"bar-result-label\">2 / 10%</div>\n    </div>\n</div>\n";
 },"useData":true});
 
-},{"hbsfy/runtime":22}],34:[function(require,module,exports){
+},{"hbsfy/runtime":22}],39:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data,blockParams,depths) {
@@ -17185,7 +17465,9 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
     + alias1(container.lambda((depths[1] != null ? depths[1].id : depths[1]), depth0))
     + "\" id=\"a"
     + alias1(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(depth0,{"name":"id","hash":{},"data":data}) : helper)))
-    + "\" type=\"radio\" class=\"toggle no-select\" />\n        <label for=\"a"
+    + "\" type=\"radio\" value=\""
+    + alias1(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(depth0,{"name":"id","hash":{},"data":data}) : helper)))
+    + "\" class=\"toggle no-select\" />\n        <label for=\"a"
     + alias1(((helper = (helper = helpers.id || (depth0 != null ? depth0.id : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(depth0,{"name":"id","hash":{},"data":data}) : helper)))
     + "\">"
     + alias1(((helper = (helper = helpers.answer || (depth0 != null ? depth0.answer : depth0)) != null ? helper : alias2),(typeof helper === alias3 ? helper.call(depth0,{"name":"answer","hash":{},"data":data}) : helper)))
@@ -17197,14 +17479,7 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
     + container.escapeExpression(((helper = (helper = helpers.question || (depth0 != null ? depth0.question : depth0)) != null ? helper : helpers.helperMissing),(typeof helper === "function" ? helper.call(depth0,{"name":"question","hash":{},"data":data}) : helper)))
     + "</h2>\n<ul class=\"poll-answers radio\">\n"
     + ((stack1 = helpers.each.call(depth0,(depth0 != null ? depth0.answers : depth0),{"name":"each","hash":{},"fn":container.program(1, data, 0, blockParams, depths),"inverse":container.noop,"data":data})) != null ? stack1 : "")
-    + "</ul>\n<div class=\"poll-controls\">\n    <a href=\"\" class=\"btn primary-btn\">Submit Selection</a>\n</div>\n";
+    + "</ul>\n<div class=\"poll-controls\">\n    <button type=\"button\" id=\"vote-btn\" class=\"btn primary-btn\">Vote!</button>\n</div>\n";
 },"useData":true,"useDepths":true});
 
-},{"hbsfy/runtime":22}],35:[function(require,module,exports){
-// hbsfy compiled Handlebars template
-var HandlebarsCompiler = require('hbsfy/runtime');
-module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
-    return "<div class=\"tabs\">\n    <!-- TAB #1 --> \n    <div class=\"tab\">\n        <input class=\"tab-radio\" type=\"radio\" id=\"tab-1\" name=\"tab-group-1\" checked>\n        <label class=\"tab-label\" for=\"tab-1\">Poll Results</label>\n        \n        <div class=\"tab-panel\">\n        <div class=\"tab-content\">\n            <h3>Why would this be cool?</h3>\n            <p>First look at the HTML structure: all elements related to one tab are within one block. Now think about that for a while. This must be done by Chris Coyier's <a href=\"http://css-tricks.com/functional-css-tabs-revisited/\">Functional CSS Tabs Revisited</a> already, right?</p>\n            <p>Maybe. But then you may notice another thing: Chris' example uses absolute positioning for the content. This means the tabs must be of fixed height. Yet these tabs here certainly aren't!</p>\n        </div>\n        </div> \n    </div>\n  \n    <!-- TAB #2 -->\n    <div class=\"tab\">\n        <input class=\"tab-radio\" type=\"radio\" id=\"tab-3\" name=\"tab-group-1\">\n        <label class=\"tab-label\" for=\"tab-3\">&plus;</label>\n\n        <div class=\"tab-panel\">\n        <div class=\"tab-content\">\n            <h3>The support must be poor!</h3>\n            <p>The CSS only part of this solution works in Internet Explorer 9+. All the other browsers are supported from so far back that it is enough to tell this works on Firefox, Chrome, Safari and Opera.</p>\n            <p>The JavaScript is quite simple and it is for IE8 and below. It does no harm to other browsers, but you probably want to hide it behind IE conditional comments: <code>&lt;!--[if lte IE 8]&gt; &hellip; &lt;![endif]--&gt;</code></p>\n        </div>\n        </div>\n    </div>  \n</div>\n\n";
-},"useData":true});
-
-},{"hbsfy/runtime":22}]},{},[25,30,31,32,33,34,35]);
+},{"hbsfy/runtime":22}]},{},[25,33,34,35,36,37,38,39]);

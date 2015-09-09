@@ -1,8 +1,12 @@
 <div id={{id}} class="modal" style="display: none">
     <div class="modal-header">
-        <span class="close">&times</span>
+        <span class="modal-close">&times</span>
     </div>
     <div class="modal-body">
+        <div class="modal-alert" style="display:none">
+            <span class="close">&times;</span> 
+            <p class="modal-alert-content"></p>
+        </div>
         {{{contents}}}
     </div>
 </div>

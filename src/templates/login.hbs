@@ -1,0 +1,11 @@
+<h1>Quizlet:Admin</h1>
+{{#if authenticated }}
+    <p>Hey, <b>Admin</b>!  You're already authenticated.</p>
+{{else}}
+    <p>Login as administrator</p>
+    <input type="password" class="form-control" name="password" placeholder="Password" autofocus />
+    <div class="modal-controls">
+        <button type="button" class="btn">Cancel</button>
+        <button type="button" name="btn-login" class="btn primary-btn">Login</button>
+    </div>
+{{/if}}

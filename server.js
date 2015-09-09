@@ -1,15 +1,10 @@
 var express = require('express'),
     morgan = require('morgan'),
     quizlet = require('./middleware.js'),
-    parser = require('body-parser'),
     app = express();
 
 // Serve all static files from 'build/` dir
 app.use(express.static('build'));
-
-// Need to parse JSON from requests
-app.use(parser.urlencoded({ extended: true }));
-app.use(parser.json());
 
 // console.logging requests in development
 app.use(morgan('dev'));

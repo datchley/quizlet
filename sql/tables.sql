@@ -22,7 +22,7 @@ CREATE TABLE IF NOT EXISTS poll_answers(
 CREATE TABLE IF NOT EXISTS poll_trackings(
     id INT NOT NULL AUTO_INCREMENT,
     client TEXT NOT NULL,
-    seen TEXT DEFAULT '[]',
+    last_seen INT DEFAULT 0,
     PRIMARY KEY(id)
 );
 

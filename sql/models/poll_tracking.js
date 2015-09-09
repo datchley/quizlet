@@ -12,9 +12,10 @@ module.exports = function(sequelize, DataTypes) {
       type: DataTypes.TEXT,
       allowNull: false,
     },
-    seen: {
-      type: DataTypes.TEXT,
-      allowNull: false
+    last_seen: {
+      type: DataTypes.INTEGER(11),
+      allowNull: true,
+      defaultValue: 0
     }
   }, {
     timestamps: false

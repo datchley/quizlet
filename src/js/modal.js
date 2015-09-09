@@ -30,10 +30,17 @@ var modal = function(cfg) {
     $modal.css('z-index', '1999');
 
     return { 
-        initialized: false,
+        classes: {
+            'info': 'modal-alert-info',
+            'error': 'modal-alert-danger',
+            'success': 'modal-alert-success'
+        },
         show: function() {
             // Append markup element for modal
-            $('body').append($modal);
+            var $el = $('body').append($modal),
+                $alert = $el.find('.modal-alert');
+
+            this.$alert = $alert;
 
             // Append mask if not already 
             if (!$('#modal-mask').length) {
@@ -43,13 +50,32 @@ var modal = function(cfg) {
             $mask.show();
             $modal.show();
     
-            if (!this.initialized) {
-                $('.close', $modal).on('click', this.hide);
+            $('.modal-close', $modal).on('click', this.hide);
+            return $el;
+        },
+
+        alert: function(type, message) {
+           var self = this;
+
+            if (arguments.length == 1) {
+                message = type;
+                type = 'info';
             }
+
+            this.$alert
+                .removeClass('modal-alert-info modal-alert-success modal-alert-danger')
+                .addClass(this.classes[type.toLowerCase()]);
+
+            $('.modal-alert-content', this.$alert).html(message);
+
+            this.$alert.show();
+            this.$alert.find('.close').click(function() {
+                self.$alert.hide();
+            });
         },
 
         hide: function() {
-            $modal.hide();
+            $modal.hide().remove();
             $mask.hide();
         }
     };
