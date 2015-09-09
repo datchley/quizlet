@@ -67,7 +67,7 @@ In your client-side application, on the page you wish the polls to display on, s
 Then, kick everything off by calling the `.init()` method.  You can configure quizlet by passing in a configuration object to the `.init()` method.  Currently the only config is the endpoint url for backend XHR calls.
 
 ```javascript
-var quizlet = require('./poll.js');
+var quizlet = require('./quizlet.js');
 
 // Kick off Quizlet running....
 quizlet.init({
@@ -84,11 +84,16 @@ To test locally, you can simply run `node server.js` on the command line and the
 
 Once there, you'll be prompted to answer a poll (there are two dummy polls in the database). Once you answer the poll, you can login as admin by typing `quizlet↑` which will prompt you for the administrator password (the default is `sumome`).  
 
+![Answer a Poll]('img/quizlet-interface-poll-display.png')
+
 Once you login, you'll see the admin interface which consists of two tabs.
 
 1. **Poll Results** - show the current results of voting on all available polls. You can expand/collapse each one and scroll through them.
 2. **'+' (Add Poll)** - this is where you add new polls.
 
+![Admin Results]('img/quilet-interface-poll-results.png')
+
+![Admin Results]('img/quilet-interface-poll-entry.png')
 
 # What is Quizlet
 Quizlet is really two pieces, so we'll cover them individually.
