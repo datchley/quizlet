@@ -84,16 +84,20 @@ To test locally, you can simply run `node server.js` on the command line and the
 
 Once there, you'll be prompted to answer a poll (there are two dummy polls in the database). Once you answer the poll, you can login as admin by typing `quizlet↑` which will prompt you for the administrator password (the default is `sumome`).  
 
+<center>
 <img src="/img/quizlet-interface-poll-display.png?raw=true" width="200" />
+</center>
 
 Once you login, you'll see the admin interface which consists of two tabs.
 
 1. **Poll Results** - show the current results of voting on all available polls. You can expand/collapse each one and scroll through them.
 2. **'+' (Add Poll)** - this is where you add new polls.
 
-![Admin Results](/img/quilet-interface-poll-results.png?raw=true)
+<center>
+<img src="/img/quilet-interface-poll-results.png?raw=true" width="200"/>
 
-![Admin Results](/img/quilet-interface-poll-entry.png?raw=true)
+<img src="/img/quilet-interface-poll-entry.png?raw=true" width="200" />
+</center>
 
 # What is Quizlet
 Quizlet is really two pieces, so we'll cover them individually.
