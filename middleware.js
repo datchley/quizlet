@@ -22,8 +22,8 @@ router.use(parser.json());
 
 // Simple authentication middleware
 function auth(req, res, next) {
-    console.log("> token: ", req.cookies.quizlet_admin_token);
-    var token = req.body.token || req.query.token || req.headers['x-access-token'] || req.cookies.quizlet_admin_token;
+    console.log("> token: ", req.cookies.quizlet_admin_token.replace(/"/g,''));
+    var token = req.body.token || req.query.token || req.headers['x-access-token'] || req.cookies.quizlet_admin_token.replace(/"/g,'');
 
     if (token) {
         jwtoken.verify(token, config.admin_key, function(err, decoded) {

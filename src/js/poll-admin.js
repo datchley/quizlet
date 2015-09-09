@@ -1,4 +1,5 @@
 var template = require('../templates/poll-admin.hbs'),
+    answer_template = require('../templates/poll-answer.hbs'),
     cookie = require('../lib/js/cookie.js'),
     modal = require('./modal.js'),
     $ = require('jquery'),
@@ -37,6 +38,54 @@ var PollAdminView = {
                 console.log("> error: not authenticated, no admin access");
             }
         });
+
+
+        
+    },
+
+    initUIEvents: function() {
+        var self = this,
+            $answers = $('.poll-entry-list', self.$modal);
+        
+        $('.add-more-button', self.$modal).on('click', function() {
+            $answers.append(answer_template());
+        });
+
+        $answers.on('click', '.remove', function() {
+            $(this).parent('li').remove();
+        });
+
+        $('button#save-poll-btn', self.$modal).click(function(){
+            var question = self.$modal.find('input.question-input').val(),
+                answers = [];
+
+            self.$modal.find('input.answer-input').each(function(index, el) {
+                answers.push({ answer: $(el).val() });
+            });
+
+            var params = {
+                "question": question,
+                "answers": answers
+            };
+
+            $.ajax({
+                method: 'POST',
+                dataType: "json",
+                url: self.config.url + '/polls/',
+                data: params
+            })
+            .then(function(results) {
+                if (results.success) {
+                    self.adminModal.alert('success', 'New Poll created! id=' + results.data.id);
+                }
+                else {
+                    self.adminModal.alert('error', 'Unable to create new poll: ' + results.message); 
+                }
+            })
+            .fail(function(response) {
+                self.adminModal.alert('error', response.responseJSON.message || response.responseText);
+            });
+        });
     },
 
     showAdmin: function() {
@@ -64,20 +113,10 @@ var PollAdminView = {
                     }),
                     adminModal =  modal({ contents: html });
 
+                self.adminModal = adminModal;
                 self.$modal = adminModal.show();
-/*
-                this.$el.find('button[name="btn-login"]').on('click', function(ev) {
-                    self.authenticate();
-                    return false;
-                });
 
-                this.$el.find('input[name="password"]').keypress(function(ev) {
-                    if (ev.which == 13) {
-                        self.authenticate();
-                        return false;
-                    }
-                });
-*/
+                self.initUIEvents();
             });
     }
 };

@@ -17037,6 +17037,7 @@ module.exports = modal;
 
 },{"../templates/modal.hbs":35,"jquery":23}],29:[function(require,module,exports){
 var template = require('../templates/poll-admin.hbs'),
+    answer_template = require('../templates/poll-answer.hbs'),
     cookie = require('../lib/js/cookie.js'),
     modal = require('./modal.js'),
     $ = require('jquery'),
@@ -17075,6 +17076,54 @@ var PollAdminView = {
                 console.log("> error: not authenticated, no admin access");
             }
         });
+
+
+        
+    },
+
+    initUIEvents: function() {
+        var self = this,
+            $answers = $('.poll-entry-list', self.$modal);
+        
+        $('.add-more-button', self.$modal).on('click', function() {
+            $answers.append(answer_template());
+        });
+
+        $answers.on('click', '.remove', function() {
+            $(this).parent('li').remove();
+        });
+
+        $('button#save-poll-btn', self.$modal).click(function(){
+            var question = self.$modal.find('input.question-input').val(),
+                answers = [];
+
+            self.$modal.find('input.answer-input').each(function(index, el) {
+                answers.push({ answer: $(el).val() });
+            });
+
+            var params = {
+                "question": question,
+                "answers": answers
+            };
+
+            $.ajax({
+                method: 'POST',
+                dataType: "json",
+                url: self.config.url + '/polls/',
+                data: params
+            })
+            .then(function(results) {
+                if (results.success) {
+                    self.adminModal.alert('success', 'New Poll created! id=' + results.data.id);
+                }
+                else {
+                    self.adminModal.alert('warning', 'Unable to create new poll: ' + results.message); 
+                }
+            })
+            .fail(function(response) {
+                self.adminModal.alert('error', response.responseJSON.message || response.responseText);
+            });
+        });
     },
 
     showAdmin: function() {
@@ -17102,27 +17151,17 @@ var PollAdminView = {
                     }),
                     adminModal =  modal({ contents: html });
 
+                self.adminModal = adminModal;
                 self.$modal = adminModal.show();
-/*
-                this.$el.find('button[name="btn-login"]').on('click', function(ev) {
-                    self.authenticate();
-                    return false;
-                });
 
-                this.$el.find('input[name="password"]').keypress(function(ev) {
-                    if (ev.which == 13) {
-                        self.authenticate();
-                        return false;
-                    }
-                });
-*/
+                self.initUIEvents();
             });
     }
 };
 
 module.exports = PollAdminView;
 
-},{"../lib/js/cookie.js":32,"../templates/poll-admin.hbs":36,"./modal.js":28,"bluebird":1,"jquery":23,"underscore":24}],30:[function(require,module,exports){
+},{"../lib/js/cookie.js":32,"../templates/poll-admin.hbs":36,"../templates/poll-answer.hbs":37,"./modal.js":28,"bluebird":1,"jquery":23,"underscore":24}],30:[function(require,module,exports){
 var template = require('../templates/poll.hbs'),
     modal = require('./modal.js'),
     $ = require('jquery'),
@@ -17192,7 +17231,7 @@ var PollView = {
 module.exports = PollView;
 
 
-},{"../templates/poll.hbs":39,"./modal.js":28,"bluebird":1,"jquery":23,"underscore":24}],31:[function(require,module,exports){
+},{"../templates/poll.hbs":40,"./modal.js":28,"bluebird":1,"jquery":23,"underscore":24}],31:[function(require,module,exports){
 var Login = require('./login.js'),
     PollAdmin = require('./poll-admin.js'),
     Poll = require('./poll.js'),
@@ -17438,24 +17477,31 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
 
   return "<!-- tabs -->\n<div class=\"tabs\">\n    <!-- TAB #1 -->\n    <div class=\"tab\">\n        <input class=\"tab-radio\" type=\"radio\" id=\"tab-1\" name=\"tab-group-1\" checked>\n        <label class=\"tab-label\" for=\"tab-1\">Poll Results</label>\n        <div class=\"tab-panel\">\n            <div class=\"tab-content\">\n                <p>\n                    <!-- accordion -->\n                    <ul class=\"accordion\">\n"
     + ((stack1 = helpers.each.call(depth0,(depth0 != null ? depth0.polls : depth0),{"name":"each","hash":{},"fn":container.program(1, data, 0),"inverse":container.noop,"data":data})) != null ? stack1 : "")
-    + "                    </ul>\n                    <!-- /accordion -->\n                </p>\n            </div>\n        </div> \n    </div>\n    <!-- TAB #2 -->\n    <div class=\"tab\">\n        <input class=\"tab-radio\" type=\"radio\" id=\"tab-3\" name=\"tab-group-1\">\n        <label class=\"tab-label\" for=\"tab-3\">&plus;</label>\n        <div class=\"tab-panel\">\n            <div class=\"tab-content\">\n                <div class=\"poll-question-control\">\n                    <p> Enter a new poll question and answers below.  </p>\n                    <input type=\"text\" class=\"question-input\" placeholder=\"Enter the poll question\" autofocus />\n                </div>\n                <ol class=\"poll-entry-list\">\n                    <li class=\"poll-answer-control\">\n                        <input type=\"text\" class=\"answer-input\" placeholder=\"First Answer\" />\n                    </li>\n                    <li class=\"poll-answer-control\">\n                        <input type=\"text\" class=\"answer-input\" placeholder=\"Second Answer\" />\n                    </li>\n                </ol>\n\n                <div style=\"text-align: right\">\n                    <a href=\"javascript: false;\" class=\"add-more-button\">Add another answer</a>\n                </div>\n                <div class=\"modal-controls\">\n                    <button class=\"btn primary-btn\">Save Poll</button>\n                </div>\n            </div>\n        </div>\n    </div>  \n</div>\n<!-- /tabs -->\n";
+    + "                    </ul>\n                    <!-- /accordion -->\n                </p>\n            </div>\n        </div> \n    </div>\n    <!-- TAB #2 -->\n    <div class=\"tab\">\n        <input class=\"tab-radio\" type=\"radio\" id=\"tab-3\" name=\"tab-group-1\">\n        <label class=\"tab-label\" for=\"tab-3\">&plus;</label>\n        <div class=\"tab-panel\">\n            <div class=\"tab-content\">\n                <div class=\"poll-question-control\">\n                    <p> Enter a new poll question and answers below.  </p>\n                    <input type=\"text\" class=\"question-input\" placeholder=\"Enter the poll question\" autofocus />\n                </div>\n                <ol class=\"poll-entry-list\">\n                    <li class=\"poll-answer-control\">\n                        <input type=\"text\" class=\"answer-input\" placeholder=\"First Answer\" />\n                    </li>\n                    <li class=\"poll-answer-control\">\n                        <input type=\"text\" class=\"answer-input\" placeholder=\"Second Answer\" />\n                    </li>\n                </ol>\n\n                <div style=\"text-align: right\">\n                    <a href=\"javascript: false;\" class=\"add-more-button\">Add another answer</a>\n                </div>\n                <div class=\"modal-controls\">\n                    <button id=\"save-poll-btn\" class=\"btn primary-btn\">Save Poll</button>\n                </div>\n            </div>\n        </div>\n    </div>  \n</div>\n<!-- /tabs -->\n";
 },"useData":true});
 
 },{"hbsfy/runtime":22}],37:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
-    return "<div class=\"poll-question-control\">\n    <p> Enter a new poll question and answers below.  </p>\n    <input type=\"text\" class=\"question-input\" placeholder=\"Enter the poll question\" autofocus />\n</div>\n<ol class=\"poll-entry-list\">\n    <li class=\"poll-answer-control\">\n        <input type=\"text\" class=\"answer-input\" placeholder=\"First Answer\" />\n    </li>\n    <li class=\"poll-answer-control\">\n        <input type=\"text\" class=\"answer-input\" placeholder=\"Second Answer\" />\n    </li>\n</ol>\n\n<div style=\"text-align: right\">\n    <a href=\"javascript: false;\" class=\"add-more-button\">Add another answer</a>\n</div>\n<div class=\"modal-controls\">\n    <button class=\"btn primary-btn\">Save Poll</button>\n</div>\n";
+    return "<li class=\"poll-answer-control\">\n    <input type=\"text\" class=\"answer-input\" placeholder=\"Additional Answer\" />\n    <span class=\"remove\">&times;</span>\n</li>\n";
 },"useData":true});
 
 },{"hbsfy/runtime":22}],38:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
-    return "<div class=\"bar-results-columns\">\n    <div class=\"bar-results-col-left\">Answers</div>\n    <div class=\"bar-results-col-right\">Count / %</div>\n</div>\n<div class=\"bar-results\">\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 20%\"></div>\n        <div class=\"bar-result-text\">Answer #1 Text</div>\n        <div class=\"bar-result-label\">3 / 20%</div>\n    </div>\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 30%\"></div>\n        <div class=\"bar-result-text\">Answer #2 Text</div>\n        <div class=\"bar-result-label\">9 / 30%</div>\n    </div>\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 45%\"></div>\n        <div class=\"bar-result-text\">Answer #3 Text</div>\n        <div class=\"bar-result-label\">14 / 45%</div>\n    </div>\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 10%\"></div>\n        <div class=\"bar-result-text\">Answer #4 Text</div>\n        <div class=\"bar-result-label\">2 / 10%</div>\n    </div>\n</div>\n";
+    return "<div class=\"poll-question-control\">\n    <p> Enter a new poll question and answers below.  </p>\n    <input type=\"text\" class=\"question-input\" placeholder=\"Enter the poll question\" autofocus />\n</div>\n<ol class=\"poll-entry-list\">\n    <li class=\"poll-answer-control\">\n        <input type=\"text\" class=\"answer-input\" placeholder=\"First Answer\" />\n    </li>\n    <li class=\"poll-answer-control\">\n        <input type=\"text\" class=\"answer-input\" placeholder=\"Second Answer\" />\n    </li>\n</ol>\n\n<div style=\"text-align: right\">\n    <a href=\"javascript: false;\" class=\"add-more-button\">Add another answer</a>\n</div>\n<div class=\"modal-controls\">\n    <button class=\"btn primary-btn\">Save Poll</button>\n</div>\n";
 },"useData":true});
 
 },{"hbsfy/runtime":22}],39:[function(require,module,exports){
+// hbsfy compiled Handlebars template
+var HandlebarsCompiler = require('hbsfy/runtime');
+module.exports = HandlebarsCompiler.template({"compiler":[7,">= 4.0.0"],"main":function(container,depth0,helpers,partials,data) {
+    return "<div class=\"bar-results-columns\">\n    <div class=\"bar-results-col-left\">Answers</div>\n    <div class=\"bar-results-col-right\">Count / %</div>\n</div>\n<div class=\"bar-results\">\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 20%\"></div>\n        <div class=\"bar-result-text\">Answer #1 Text</div>\n        <div class=\"bar-result-label\">3 / 20%</div>\n    </div>\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 30%\"></div>\n        <div class=\"bar-result-text\">Answer #2 Text</div>\n        <div class=\"bar-result-label\">9 / 30%</div>\n    </div>\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 45%\"></div>\n        <div class=\"bar-result-text\">Answer #3 Text</div>\n        <div class=\"bar-result-label\">14 / 45%</div>\n    </div>\n    <div class=\"bar-result\">\n        <div class=\"bar-result-graph\" style=\"width: 10%\"></div>\n        <div class=\"bar-result-text\">Answer #4 Text</div>\n        <div class=\"bar-result-label\">2 / 10%</div>\n    </div>\n</div>\n";
+},"useData":true});
+
+},{"hbsfy/runtime":22}],40:[function(require,module,exports){
 // hbsfy compiled Handlebars template
 var HandlebarsCompiler = require('hbsfy/runtime');
 module.exports = HandlebarsCompiler.template({"1":function(container,depth0,helpers,partials,data,blockParams,depths) {
@@ -17482,4 +17528,4 @@ module.exports = HandlebarsCompiler.template({"1":function(container,depth0,help
     + "</ul>\n<div class=\"poll-controls\">\n    <button type=\"button\" id=\"vote-btn\" class=\"btn primary-btn\">Vote!</button>\n</div>\n";
 },"useData":true,"useDepths":true});
 
-},{"hbsfy/runtime":22}]},{},[25,33,34,35,36,37,38,39]);
+},{"hbsfy/runtime":22}]},{},[25,33,34,35,36,37,38,39,40]);
