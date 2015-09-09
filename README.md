@@ -84,7 +84,7 @@ To test locally, you can simply run `node server.js` on the command line and the
 
 Once there, you'll be prompted to answer a poll (there are two dummy polls in the database). Once you answer the poll, you can login as admin by typing `quizlet↑` which will prompt you for the administrator password (the default is `sumome`).  
 
-![Answer a Poll](/img/quizlet-interface-poll-display.png?raw=true)
+<img src="/img/quizlet-interface-poll-display.png?raw=true" width="200" />
 
 Once you login, you'll see the admin interface which consists of two tabs.
 
