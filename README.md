@@ -94,9 +94,9 @@ Once you login, you'll see the admin interface which consists of two tabs.
 2. **'+' (Add Poll)** - this is where you add new polls.
 
 <center>
-<img src="/img/quilet-interface-poll-results.png?raw=true" width="200"/>
+<img src="/img/quizlet-interface-poll-results.png?raw=true" width="200"/>
 
-<img src="/img/quilet-interface-poll-entry.png?raw=true" width="200" />
+<img src="/img/quizlet-interface-poll-entry.png?raw=true" width="200" />
 </center>
 
 # What is Quizlet
